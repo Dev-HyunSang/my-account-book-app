@@ -169,8 +169,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final month = _cursor.month;
     final firstWeekday = DateTime(year, month, 1).weekday % 7;
     final lastDay = DateTime(year, month + 1, 0).day;
+    final rows = ((firstWeekday + lastDay) / 7).ceil();
     final cells = <_Cell?>[];
-    for (var i = 0; i < 42; i++) {
+    for (var i = 0; i < rows * 7; i++) {
       final dayNum = i - firstWeekday + 1;
       if (dayNum < 1 || dayNum > lastDay) {
         cells.add(null);
@@ -180,36 +181,43 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: cells.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 7,
-          mainAxisSpacing: 2,
-          crossAxisSpacing: 2,
-          mainAxisExtent: 64,
-        ),
-        itemBuilder: (context, i) {
-          final cell = cells[i];
-          if (cell == null) return const SizedBox.shrink();
-          final selected = _isSameDay(cell.date, _selected);
-          final weekday = i % 7;
-          final dayColor = weekday == 0
-              ? AppTokens.expense
-              : weekday == 6
-              ? const Color(0xFF4674C6)
-              : AppTokens.ink;
-          final data = perDay[_normalize(cell.date)];
-          return _DayCell(
-            cell: cell,
-            selected: selected,
-            dayColor: dayColor,
-            data: data,
-            onTap: () => setState(() => _selected = cell.date),
-          );
-        },
+      child: Column(
+        children: [
+          for (var r = 0; r < rows; r++)
+            Padding(
+              padding: EdgeInsets.only(top: r == 0 ? 0 : 2),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var c = 0; c < 7; c++) ...[
+                      Expanded(child: _buildCell(cells[r * 7 + c], c, perDay)),
+                      if (c < 6) const SizedBox(width: 2),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildCell(_Cell? cell, int weekday, Map<DateTime, _DaySum> perDay) {
+    if (cell == null) return const SizedBox(height: 36);
+    final selected = _isSameDay(cell.date, _selected);
+    final dayColor = weekday == 0
+        ? AppTokens.expense
+        : weekday == 6
+            ? const Color(0xFF4674C6)
+            : AppTokens.ink;
+    final data = perDay[_normalize(cell.date)];
+    return _DayCell(
+      cell: cell,
+      selected: selected,
+      dayColor: dayColor,
+      data: data,
+      onTap: () => setState(() => _selected = cell.date),
     );
   }
 
@@ -353,8 +361,11 @@ class _DayCell extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
+        constraints: const BoxConstraints(minHeight: 36),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               '${cell.dayNum}',
@@ -365,7 +376,6 @@ class _DayCell extends StatelessWidget {
                 height: 1,
               ),
             ),
-            const Spacer(),
             if (data != null) ...[
               if (data!.income > 0)
                 Text(
