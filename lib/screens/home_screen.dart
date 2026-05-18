@@ -2,11 +2,12 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../models/transaction.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/add_transaction_sheet.dart';
 import 'calendar_screen.dart';
-import 'settings_screen.dart';
-import 'transactions_screen.dart';
+import 'list_screen.dart';
+import 'me_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,12 +17,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _index = 1;
+  int _index = 0;
 
   static const _pages = <Widget>[
-    TransactionsScreen(),
     CalendarScreen(),
-    SettingsScreen(),
+    ListScreen(type: TxType.income),
+    ListScreen(type: TxType.expense),
+    MeScreen(),
   ];
 
   void _openAdd() {
@@ -29,7 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _SheetWrap(child: AddTransactionSheet()),
+      barrierColor: AppTokens.ink.withValues(alpha: 0.45),
+      builder: (_) => const AddTransactionSheet(),
     );
   }
 
@@ -43,30 +46,6 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _index,
         onTab: (i) => setState(() => _index = i),
         onAdd: _openAdd,
-      ),
-    );
-  }
-}
-
-class _SheetWrap extends StatelessWidget {
-  const _SheetWrap({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppTokens.card,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTokens.radiusXl),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: child,
       ),
     );
   }
@@ -108,16 +87,16 @@ class _TeongjangNavBar extends StatelessWidget {
               children: [
                 Expanded(
                   child: _NavTab(
-                    icon: Icons.list_alt_rounded,
-                    label: '거래',
+                    icon: Icons.calendar_month_rounded,
+                    label: '캘린더',
                     active: index == 0,
                     onTap: () => onTab(0),
                   ),
                 ),
                 Expanded(
                   child: _NavTab(
-                    icon: Icons.calendar_month_rounded,
-                    label: '캘린더',
+                    icon: Icons.south_west_rounded,
+                    label: '수입',
                     active: index == 1,
                     onTap: () => onTab(1),
                   ),
@@ -125,13 +104,20 @@ class _TeongjangNavBar extends StatelessWidget {
                 _AddButton(onTap: onAdd),
                 Expanded(
                   child: _NavTab(
-                    icon: Icons.settings_rounded,
-                    label: '설정',
+                    icon: Icons.north_east_rounded,
+                    label: '지출',
                     active: index == 2,
                     onTap: () => onTab(2),
                   ),
                 ),
-                const Expanded(child: SizedBox.shrink()),
+                Expanded(
+                  child: _NavTab(
+                    icon: Icons.person_rounded,
+                    label: '내 정보',
+                    active: index == 3,
+                    onTap: () => onTab(3),
+                  ),
+                ),
               ],
             ),
           ),
@@ -194,21 +180,23 @@ class _AddButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Transform.translate(
         offset: const Offset(0, -16),
-        child: Material(
-          color: AppTokens.stamp,
-          shape: const CircleBorder(),
-          elevation: 0,
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: AppTokens.shadowStamp,
+        child: Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: AppTokens.shadowStamp,
+          ),
+          child: Material(
+            color: AppTokens.stamp,
+            shape: const CircleBorder(),
+            elevation: 0,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: const SizedBox(
+                width: 56,
+                height: 56,
+                child: Icon(Icons.add, color: Colors.white, size: 28),
               ),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
             ),
           ),
         ),

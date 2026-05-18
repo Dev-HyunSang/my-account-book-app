@@ -38,6 +38,7 @@ class TxItem {
   final String category;
   final String memo;
   final DateTime date;
+  final bool recurring;
 
   TxItem({
     required this.id,
@@ -46,6 +47,7 @@ class TxItem {
     required this.category,
     required this.memo,
     required this.date,
+    this.recurring = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -55,6 +57,7 @@ class TxItem {
         'category': category,
         'memo': memo,
         'date': date.toIso8601String(),
+        'recurring': recurring,
       };
 
   factory TxItem.fromJson(Map<String, dynamic> j) => TxItem(
@@ -67,6 +70,7 @@ class TxItem {
         category: j['category'] as String? ?? '',
         memo: j['memo'] as String? ?? '',
         date: DateTime.parse(j['date'] as String),
+        recurring: j['recurring'] as bool? ?? false,
       );
 
   static String encodeList(List<TxItem> items) =>
