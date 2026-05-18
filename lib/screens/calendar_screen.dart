@@ -212,7 +212,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget _detailHeader(int count) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
