@@ -62,6 +62,9 @@ class _TeongjangNavBar extends StatelessWidget {
   final ValueChanged<int> onTab;
   final VoidCallback onAdd;
 
+  static const double _fabSize = 56;
+  static const double _fabLift = 16;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -69,59 +72,70 @@ class _TeongjangNavBar extends StatelessWidget {
         left: 12,
         right: 12,
         bottom: MediaQuery.of(context).padding.bottom + 8,
+        top: _fabLift + 8,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppTokens.radiusXl),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppTokens.paper.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(AppTokens.radiusXl),
-              border: Border.all(color: AppTokens.divider),
-              boxShadow: AppTokens.shadowMd,
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: _NavTab(
-                    icon: Icons.calendar_month_rounded,
-                    label: '캘린더',
-                    active: index == 0,
-                    onTap: () => onTab(0),
-                  ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppTokens.radiusXl),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTokens.paper.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(AppTokens.radiusXl),
+                  border: Border.all(color: AppTokens.divider),
+                  boxShadow: AppTokens.shadowMd,
                 ),
-                Expanded(
-                  child: _NavTab(
-                    icon: Icons.south_west_rounded,
-                    label: '수입',
-                    active: index == 1,
-                    onTap: () => onTab(1),
-                  ),
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: _NavTab(
+                        icon: Icons.calendar_month_rounded,
+                        label: '캘린더',
+                        active: index == 0,
+                        onTap: () => onTab(0),
+                      ),
+                    ),
+                    Expanded(
+                      child: _NavTab(
+                        icon: Icons.south_west_rounded,
+                        label: '수입',
+                        active: index == 1,
+                        onTap: () => onTab(1),
+                      ),
+                    ),
+                    SizedBox(width: _fabSize + 16),
+                    Expanded(
+                      child: _NavTab(
+                        icon: Icons.north_east_rounded,
+                        label: '지출',
+                        active: index == 2,
+                        onTap: () => onTab(2),
+                      ),
+                    ),
+                    Expanded(
+                      child: _NavTab(
+                        icon: Icons.person_rounded,
+                        label: '내 정보',
+                        active: index == 3,
+                        onTap: () => onTab(3),
+                      ),
+                    ),
+                  ],
                 ),
-                _AddButton(onTap: onAdd),
-                Expanded(
-                  child: _NavTab(
-                    icon: Icons.north_east_rounded,
-                    label: '지출',
-                    active: index == 2,
-                    onTap: () => onTab(2),
-                  ),
-                ),
-                Expanded(
-                  child: _NavTab(
-                    icon: Icons.person_rounded,
-                    label: '내 정보',
-                    active: index == 3,
-                    onTap: () => onTab(3),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          Positioned(
+            top: -_fabLift,
+            child: _AddButton(onTap: onAdd, size: _fabSize),
+          ),
+        ],
       ),
     );
   }
@@ -170,34 +184,29 @@ class _NavTab extends StatelessWidget {
 }
 
 class _AddButton extends StatelessWidget {
-  const _AddButton({required this.onTap});
+  const _AddButton({required this.onTap, this.size = 56});
 
   final VoidCallback onTap;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Transform.translate(
-        offset: const Offset(0, -16),
-        child: Container(
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: AppTokens.shadowStamp,
-          ),
-          child: Material(
-            color: AppTokens.stamp,
-            shape: const CircleBorder(),
-            elevation: 0,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onTap,
-              child: const SizedBox(
-                width: 56,
-                height: 56,
-                child: Icon(Icons.add, color: Colors.white, size: 28),
-              ),
-            ),
+    return Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: AppTokens.shadowStamp,
+      ),
+      child: Material(
+        color: AppTokens.stamp,
+        shape: const CircleBorder(),
+        elevation: 0,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: const Icon(Icons.add, color: Colors.white, size: 28),
           ),
         ),
       ),
