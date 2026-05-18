@@ -25,10 +25,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final perDay = _aggregate(provider.items);
         final totals = perDay.values.fold(
           (income: 0.0, expense: 0.0),
-          (acc, d) => (
-            income: acc.income + d.income,
-            expense: acc.expense + d.expense,
-          ),
+          (acc, d) =>
+              (income: acc.income + d.income, expense: acc.expense + d.expense),
         );
         final net = totals.income - totals.expense;
         final selectedItems = provider.forDay(_selected)
@@ -41,12 +39,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
             SliverToBoxAdapter(child: _summaryStrip(totals, net)),
             SliverToBoxAdapter(child: _weekdayHeader()),
             SliverToBoxAdapter(child: _grid(perDay)),
+            SliverToBoxAdapter(child: _detailHeader(selectedItems.length)),
             if (selectedItems.isEmpty)
               SliverToBoxAdapter(child: _emptyDetail())
-            else ...[
-              SliverToBoxAdapter(child: _detailHeader(selectedItems.length)),
+            else
               SliverToBoxAdapter(child: _detailCard(selectedItems)),
-            ],
             const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
           ],
         );
@@ -88,8 +85,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _summaryStrip(
-      ({double income, double expense}) totals, double net) {
+  Widget _summaryStrip(({double income, double expense}) totals, double net) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Container(
@@ -109,14 +105,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 color: AppTokens.income,
               ),
               const VerticalDivider(
-                  color: AppTokens.divider, width: 24, thickness: 1),
+                color: AppTokens.divider,
+                width: 24,
+                thickness: 1,
+              ),
               SummaryStat(
                 label: '지출',
                 amount: totals.expense,
                 color: AppTokens.expense,
               ),
               const VerticalDivider(
-                  color: AppTokens.divider, width: 24, thickness: 1),
+                color: AppTokens.divider,
+                width: 24,
+                thickness: 1,
+              ),
               SummaryStat(
                 label: '잔액',
                 amount: net.abs(),
@@ -140,8 +142,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           final color = i == 0
               ? AppTokens.expense
               : i == 6
-                  ? const Color(0xFF4674C6)
-                  : AppTokens.ink3;
+              ? const Color(0xFF4674C6)
+              : AppTokens.ink3;
           return Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
@@ -196,8 +198,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           final dayColor = weekday == 0
               ? AppTokens.expense
               : weekday == 6
-                  ? const Color(0xFF4674C6)
-                  : AppTokens.ink;
+              ? const Color(0xFF4674C6)
+              : AppTokens.ink;
           final data = perDay[_normalize(cell.date)];
           return _DayCell(
             cell: cell,
