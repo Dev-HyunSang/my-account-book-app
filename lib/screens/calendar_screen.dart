@@ -41,11 +41,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
             SliverToBoxAdapter(child: _summaryStrip(totals, net)),
             SliverToBoxAdapter(child: _weekdayHeader()),
             SliverToBoxAdapter(child: _grid(perDay)),
-            SliverToBoxAdapter(child: _detailHeader(selectedItems.length)),
             if (selectedItems.isEmpty)
               SliverToBoxAdapter(child: _emptyDetail())
-            else
+            else ...[
+              SliverToBoxAdapter(child: _detailHeader(selectedItems.length)),
               SliverToBoxAdapter(child: _detailCard(selectedItems)),
+            ],
             const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
           ],
         );
