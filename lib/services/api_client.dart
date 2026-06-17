@@ -32,6 +32,11 @@ class ApiClient {
 
   Future<void>? _refreshing;
 
+  /// Invoked when an authenticated request fails with 401 and the session
+  /// cannot be recovered (no refresh token, or refresh failed). The app uses
+  /// this to bounce the user back to the login screen.
+  void Function()? onUnauthorized;
+
   ApiClient({String? baseUrl, AuthStorage? storage, http.Client? client})
       : baseUrl = baseUrl ?? _defaultBaseUrl(),
         storage = storage ?? AuthStorage(),
@@ -112,6 +117,12 @@ class ApiClient {
       if (ok) return _send(method, path, query: query, body: body, auth: auth, retry: false);
     }
 
+    // Authenticated request still unauthorized after any refresh attempt →
+    // the session is dead; notify so the app can return to login.
+    if (res.statusCode == 401 && auth) {
+      onUnauthorized?.call();
+    }
+
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return null;
       return jsonDecode(res.body);
@@ -126,6 +137,10 @@ class ApiClient {
     } catch (_) {}
     throw ApiException(res.statusCode, msg.isEmpty ? 'HTTP ${res.statusCode}' : msg);
   }
+
+  /// Force a token rotation using the stored refresh token.
+  /// Returns true when a fresh access token was obtained.
+  Future<bool> refreshTokens() => _tryRefresh();
 
   Future<bool> _tryRefresh() {
     _refreshing ??= _doRefresh().whenComplete(() => _refreshing = null);

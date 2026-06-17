@@ -13,7 +13,17 @@ class AuthProvider extends ChangeNotifier {
   AuthStatus get status => _status;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
 
-  AuthProvider({required this.client, required this.service});
+  AuthProvider({required this.client, required this.service}) {
+    // When a live API call hits an unrecoverable 401, drop the dead session
+    // so AuthGate sends the user back to the login screen.
+    client.onUnauthorized = _handleSessionExpired;
+  }
+
+  void _handleSessionExpired() {
+    if (_status == AuthStatus.unauthenticated) return;
+    client.clearTokens();
+    _set(AuthStatus.unauthenticated);
+  }
 
   Future<void> bootstrap() async {
     await client.loadTokens();
@@ -21,17 +31,43 @@ class AuthProvider extends ChangeNotifier {
       _set(AuthStatus.unauthenticated);
       return;
     }
-    final ok = await service.verify();
-    _set(ok ? AuthStatus.authenticated : AuthStatus.unauthenticated);
+    if (await service.verify()) {
+      _set(AuthStatus.authenticated);
+      return;
+    }
+    // The access token may simply be expired — rotate it with the refresh
+    // token before forcing the user back to the login screen.
+    if (client.refreshToken != null && await client.refreshTokens()) {
+      _set(await service.verify()
+          ? AuthStatus.authenticated
+          : AuthStatus.unauthenticated);
+      return;
+    }
+    _set(AuthStatus.unauthenticated);
   }
+
+  /// True when the email is not yet registered (→ send to signup).
+  Future<bool> isEmailAvailable(String email) => service.isEmailAvailable(email);
 
   Future<void> login(String email, String password) async {
     await service.login(email, password);
     _set(AuthStatus.authenticated);
   }
 
-  Future<void> register({required String email, required String password, required String nickname}) async {
-    await service.register(email: email, password: password, nickname: nickname);
+  Future<void> register({
+    required String email,
+    required String password,
+    required String nickname,
+    required bool agreeTerms,
+    required bool agreePrivacy,
+  }) async {
+    await service.register(
+      email: email,
+      password: password,
+      nickname: nickname,
+      agreeTerms: agreeTerms,
+      agreePrivacy: agreePrivacy,
+    );
     _set(AuthStatus.authenticated);
   }
 

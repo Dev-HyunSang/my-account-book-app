@@ -5,9 +5,11 @@ class IncomeService {
   final ApiClient client;
   IncomeService(this.client);
 
-  Future<List<IncomeItem>> list() async {
-    final raw = await client.get('/incomes') as List;
-    return raw
+  Future<List<IncomeItem>> list({int offset = 0, int limit = 50}) async {
+    final j = await client.get('/incomes',
+        query: {'offset': offset, 'limit': limit}) as Map<String, dynamic>;
+    final items = (j['items'] as List?) ?? const [];
+    return items
         .map((e) => IncomeItem.fromJson(e as Map<String, dynamic>))
         .toList();
   }

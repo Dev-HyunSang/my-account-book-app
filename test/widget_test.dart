@@ -1,30 +1,51 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Smoke test: with no stored session, the app boots into the auth screen.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:my_account_book_app/main.dart';
+import 'package:my_account_book_app/providers/auth_provider.dart';
+import 'package:my_account_book_app/providers/income_provider.dart';
+import 'package:my_account_book_app/providers/theme_provider.dart';
+import 'package:my_account_book_app/providers/transaction_provider.dart';
+import 'package:my_account_book_app/services/api_client.dart';
+import 'package:my_account_book_app/services/auth_service.dart';
+import 'package:my_account_book_app/services/income_service.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Unauthenticated boot shows the login screen', (tester) async {
+    // No tokens stored -> bootstrap resolves to unauthenticated without network.
+    SharedPreferences.setMockInitialValues({});
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    final apiClient = ApiClient();
+    final authProvider =
+        AuthProvider(client: apiClient, service: AuthService(apiClient));
+    final incomeProvider = IncomeProvider(IncomeService(apiClient));
+    final themeProvider = ThemeProvider();
+    final txProvider = TransactionProvider();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await themeProvider.load();
+    await txProvider.load();
+    await authProvider.bootstrap();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: themeProvider),
+          ChangeNotifierProvider.value(value: txProvider),
+          ChangeNotifierProvider.value(value: authProvider),
+          ChangeNotifierProvider.value(value: incomeProvider),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The email-first auth screen asks for the email first, with the "다음" action.
+    expect(find.text('이메일을\n입력해 주세요.'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '다음'), findsOneWidget);
+    expect(find.text('로그인도 가입도, 이메일 하나로 시작해요.'), findsOneWidget);
   });
 }

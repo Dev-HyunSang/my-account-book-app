@@ -39,6 +39,7 @@ dependencies:
   shared_preferences: ^2.5.5
   intl: ^0.20.2
   http: ^1.2.2
+  lucide_icons_flutter: ^3.1.14+2
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +62,30 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  fonts:
+    # Pretendard Variable (body/UI) — bundled in assets/fonts
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.otf
+          weight: 700
+        - asset: assets/fonts/Pretendard-ExtraBold.otf
+          weight: 800
+    # Gmarket Sans (display / hero numbers / wordmark)
+    - family: GmarketSans
+      fonts:
+        - asset: assets/fonts/GmarketSansLight.ttf
+          weight: 300
+        - asset: assets/fonts/GmarketSansMedium.ttf
+          weight: 500
+        - asset: assets/fonts/GmarketSansBold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:
