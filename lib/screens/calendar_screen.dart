@@ -3,8 +3,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../models/transaction.dart';
-import '../providers/transaction_provider.dart';
+import '../providers/expense_provider.dart';
+import '../providers/income_provider.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/tj_widgets.dart';
 
@@ -27,30 +27,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final topPad = MediaQuery.of(context).padding.top;
-    return Consumer<TransactionProvider>(
-      builder: (context, provider, _) {
+    return Consumer2<IncomeProvider, ExpenseProvider>(
+      builder: (context, incomeP, expenseP, _) {
         final year = _focused.year;
         final month = _focused.month;
 
-        // Aggregate per-day income/expense for the visible month.
+        // Aggregate per-day income/expense for the visible month from the API.
         final perDay = <String, ({double income, double expense})>{};
         double monthIncome = 0, monthExpense = 0;
-        for (final t in provider.items) {
-          if (t.date.year != year || t.date.month != month) continue;
-          final k = _key(t.date);
+        for (final it in incomeP.items) {
+          if (it.incomeDate.year != year || it.incomeDate.month != month) continue;
+          final k = _key(it.incomeDate);
           final cur = perDay[k] ?? (income: 0.0, expense: 0.0);
-          if (t.type == TxType.income) {
-            perDay[k] = (income: cur.income + t.amount, expense: cur.expense);
-            monthIncome += t.amount;
-          } else {
-            perDay[k] = (income: cur.income, expense: cur.expense + t.amount);
-            monthExpense += t.amount;
-          }
+          perDay[k] = (income: cur.income + it.amountValue, expense: cur.expense);
+          monthIncome += it.amountValue;
+        }
+        for (final it in expenseP.items) {
+          if (it.expenseDate.year != year || it.expenseDate.month != month) continue;
+          final k = _key(it.expenseDate);
+          final cur = perDay[k] ?? (income: 0.0, expense: 0.0);
+          perDay[k] = (income: cur.income, expense: cur.expense + it.amountValue);
+          monthExpense += it.amountValue;
         }
         final net = monthIncome - monthExpense;
 
-        final dayItems = provider.forDay(_selected)
-          ..sort((a, b) => a.type == TxType.income ? -1 : 1);
+        // Selected-day rows: incomes first, then expenses.
+        final dayItems = <({bool isIncome, String memo, double amount})>[];
+        for (final it in incomeP.items) {
+          if (isSameDay(it.incomeDate, _selected)) {
+            dayItems.add((isIncome: true, memo: it.memo ?? '', amount: it.amountValue));
+          }
+        }
+        for (final it in expenseP.items) {
+          if (isSameDay(it.expenseDate, _selected)) {
+            dayItems.add((isIncome: false, memo: it.memo ?? '', amount: it.amountValue));
+          }
+        }
 
         return ListView(
           padding: EdgeInsets.only(top: topPad + 12, bottom: 130),
@@ -89,13 +101,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
               child: TjCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: IntrinsicHeight(
                   child: Row(
                     children: [
-                      _SummaryStat(label: '수입', amount: monthIncome, color: TjColors.income),
+                      _SummaryStat(
+                        label: '수입',
+                        amount: monthIncome,
+                        color: TjColors.income,
+                      ),
                       const VerticalDivider(width: 1, color: TjColors.divider),
-                      _SummaryStat(label: '지출', amount: monthExpense, color: TjColors.expense),
+                      _SummaryStat(
+                        label: '지출',
+                        amount: monthExpense,
+                        color: TjColors.expense,
+                      ),
                       const VerticalDivider(width: 1, color: TjColors.divider),
                       _SummaryStat(
                         label: '잔액',
@@ -112,7 +135,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             // Calendar — table_calendar handles paging / horizontal swipe.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: TableCalendar<TxItem>(
+              child: TableCalendar<Object>(
                 firstDay: DateTime.utc(2020, 1, 1),
                 lastDay: DateTime.utc(2100, 12, 31),
                 focusedDay: _focused,
@@ -133,9 +156,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     _focused = focused;
                   });
                 },
-                onPageChanged: (focused) =>
-                    setState(() => _focused = DateTime(focused.year, focused.month, 1)),
-                calendarBuilders: CalendarBuilders<TxItem>(
+                onPageChanged: (focused) => setState(
+                  () => _focused = DateTime(focused.year, focused.month, 1),
+                ),
+                calendarBuilders: CalendarBuilders<Object>(
                   dowBuilder: (context, day) {
                     final i = day.weekday % 7; // Sun=0
                     return Center(
@@ -149,8 +173,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           color: i == 0
                               ? TjColors.expense
                               : i == 6
-                                  ? TjColors.saturday
-                                  : TjColors.ink3,
+                              ? TjColors.saturday
+                              : TjColors.ink3,
                         ),
                       ),
                     );
@@ -213,8 +237,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       children: [
                         for (var idx = 0; idx < dayItems.length; idx++)
                           TxnRow(
-                            isIncome: dayItems[idx].type == TxType.income,
-                            category: dayItems[idx].category,
+                            isIncome: dayItems[idx].isIncome,
+                            category: dayItems[idx].isIncome ? '수입' : '지출',
                             memo: dayItems[idx].memo,
                             amount: dayItems[idx].amount,
                             divider: idx < dayItems.length - 1,
@@ -241,10 +265,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final dayColor = selected
         ? TjColors.onInk
         : weekday == 0
-            ? TjColors.expense
-            : weekday == 6
-                ? TjColors.saturday
-                : TjColors.ink;
+        ? TjColors.expense
+        : weekday == 6
+        ? TjColors.saturday
+        : TjColors.ink;
     return Container(
       decoration: BoxDecoration(
         color: selected ? TjColors.ink : Colors.transparent,
@@ -266,31 +290,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           const Spacer(),
           if (data != null && data.income > 0)
-            _amt(formatWonShort(data.income),
-                selected ? TjColors.incomeOnInk : TjColors.income),
+            _amt(
+              formatWonShort(data.income),
+              selected ? TjColors.incomeOnInk : TjColors.income,
+            ),
           if (data != null && data.expense > 0)
-            _amt(formatWonShort(data.expense),
-                selected ? TjColors.expenseOnInk : TjColors.expense),
+            _amt(
+              formatWonShort(data.expense),
+              selected ? TjColors.expenseOnInk : TjColors.expense,
+            ),
         ],
       ),
     );
   }
 
   Widget _amt(String text, Color color) => Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.clip,
-        softWrap: false,
-        style: TextStyle(
-          fontFamily: kFontBody,
-          fontSize: 9.5,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.2,
-          height: 1.25,
-          color: color,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
-      );
+    text,
+    maxLines: 1,
+    overflow: TextOverflow.clip,
+    softWrap: false,
+    style: TextStyle(
+      fontFamily: kFontBody,
+      fontSize: 9.5,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.2,
+      height: 1.25,
+      color: color,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    ),
+  );
 
   static String _prettyDate(DateTime d) =>
       '${d.month}월 ${d.day}일 (${_dow[d.weekday % 7]})';
@@ -317,8 +345,10 @@ class _SummaryStat extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label.toUpperCase(),
-                style: TjType.section.copyWith(letterSpacing: 0.44)),
+            Text(
+              label.toUpperCase(),
+              style: TjType.section.copyWith(letterSpacing: 0.44),
+            ),
             const SizedBox(height: 4),
             FittedBox(
               fit: BoxFit.scaleDown,

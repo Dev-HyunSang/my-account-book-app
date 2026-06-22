@@ -7,11 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:my_account_book_app/main.dart';
 import 'package:my_account_book_app/providers/auth_provider.dart';
+import 'package:my_account_book_app/providers/expense_provider.dart';
 import 'package:my_account_book_app/providers/income_provider.dart';
 import 'package:my_account_book_app/providers/theme_provider.dart';
 import 'package:my_account_book_app/providers/transaction_provider.dart';
 import 'package:my_account_book_app/services/api_client.dart';
 import 'package:my_account_book_app/services/auth_service.dart';
+import 'package:my_account_book_app/services/expense_service.dart';
 import 'package:my_account_book_app/services/income_service.dart';
 
 void main() {
@@ -23,6 +25,7 @@ void main() {
     final authProvider =
         AuthProvider(client: apiClient, service: AuthService(apiClient));
     final incomeProvider = IncomeProvider(IncomeService(apiClient));
+    final expenseProvider = ExpenseProvider(ExpenseService(apiClient));
     final themeProvider = ThemeProvider();
     final txProvider = TransactionProvider();
 
@@ -37,6 +40,7 @@ void main() {
           ChangeNotifierProvider.value(value: txProvider),
           ChangeNotifierProvider.value(value: authProvider),
           ChangeNotifierProvider.value(value: incomeProvider),
+          ChangeNotifierProvider.value(value: expenseProvider),
         ],
         child: const MyApp(),
       ),
